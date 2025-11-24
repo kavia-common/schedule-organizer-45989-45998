@@ -3,7 +3,9 @@ import { formatMonthYear } from '../../utils/date';
 
 // PUBLIC_INTERFACE
 export function CalendarHeader({ date, view, setView, onPrev, onNext, onToday }) {
-  /** Header with navigation controls, current month label, and view switcher. */
+  /** Header with navigation controls, current month label, and view switcher.
+   * The setView callback should update both state and URL via router.
+   */
   return (
     <div className="calendar-header" role="region" aria-label="Calendar navigation">
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

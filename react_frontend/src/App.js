@@ -10,8 +10,9 @@ import { DayView } from './components/Calendar/DayView';
 import { EventModal } from './components/Events/EventModal';
 import { applyThemeTokens, themeTokens } from './theme';
 import { useLocalEvents } from './hooks/useLocalEvents';
-import { addDays, isSameDay, startOfDay } from './utils/date';
+import { isSameDay, startOfDay } from './utils/date';
 import { APP_NAME } from './constants/env';
+import { Router } from './routes.jsx';
 
 // PUBLIC_INTERFACE
 function App() {
@@ -22,14 +23,28 @@ function App() {
    * - CalendarHeader to manage current date and view.
    * - Month/Week/Day views rendering local events with simple overlap handling.
    * - EventModal for create/edit with validation.
+   * - Hash-based routing syncing URL (#/view/YYYY-MM-DD) with calendar state.
    */
   const [theme, setTheme] = useState('light');
-  const [currentDate, setCurrentDate] = useState(startOfDay(new Date()));
-  const [view, setView] = useState('month'); // 'month' | 'week' | 'day'
+
+  // Initialize from router state
+  const initial = Router.getState();
+  const [currentDate, setCurrentDate] = useState(initial.date);
+  const [view, setView] = useState(initial.view); // 'month' | 'week' | 'day'
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
 
   const { events, createEvent, updateEvent, deleteEvent } = useLocalEvents();
+
+  // Keep state in sync with hash changes
+  useEffect(() => {
+    const unsub = Router.subscribe(({ view: v, date: d }) => {
+      setView(v);
+      setCurrentDate(d);
+    });
+    return () => unsub && unsub();
+  }, []);
 
   // Apply theme tokens to document root and persist attribute
   useEffect(() => {
@@ -42,34 +57,22 @@ function App() {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   }, []);
 
-  // Navigate functions for header controls
+  // Router-driven navigation/wrappers to pass to header
   const goToday = useCallback(() => {
-    setCurrentDate(startOfDay(new Date()));
+    Router.goToday();
   }, []);
 
   const goPrev = useCallback(() => {
-    if (view === 'month') {
-      const d = new Date(currentDate);
-      d.setMonth(d.getMonth() - 1);
-      setCurrentDate(startOfDay(d));
-    } else if (view === 'week') {
-      setCurrentDate(addDays(currentDate, -7));
-    } else {
-      setCurrentDate(addDays(currentDate, -1));
-    }
-  }, [currentDate, view]);
+    Router.goPrev();
+  }, []);
 
   const goNext = useCallback(() => {
-    if (view === 'month') {
-      const d = new Date(currentDate);
-      d.setMonth(d.getMonth() + 1);
-      setCurrentDate(startOfDay(d));
-    } else if (view === 'week') {
-      setCurrentDate(addDays(currentDate, 7));
-    } else {
-      setCurrentDate(addDays(currentDate, 1));
-    }
-  }, [currentDate, view]);
+    Router.goNext();
+  }, []);
+
+  const changeView = useCallback((nextView) => {
+    Router.switchView(nextView);
+  }, []);
 
   const onCreateQuick = useCallback(() => {
     setEditingEvent({
@@ -151,7 +154,7 @@ function App() {
         <CalendarHeader
           date={currentDate}
           view={view}
-          setView={setView}
+          setView={changeView}
           onPrev={goPrev}
           onNext={goNext}
           onToday={goToday}
