@@ -3,14 +3,25 @@ import { STORAGE_NAMESPACE } from '../constants/env';
 
 const KEY = `${STORAGE_NAMESPACE}:events`;
 
+/**
+ * The shape returned by this hook is intentionally aligned with a future API-backed
+ * implementation so App and components won't break when swapping.
+ * Interface:
+ *  - events: array
+ *  - getEvents(): array
+ *  - createEvent(data): string|Promise<string>
+ *  - updateEvent(id, patch): void|Promise<void>
+ *  - deleteEvent(id): void|Promise<void>
+ *  - selectFiltered(filters): array
+ *  - selectUpcoming(filters): array
+ */
+
 // PUBLIC_INTERFACE
 export function useLocalEvents() {
   /**
    * useLocalEvents persists events in localStorage under a namespaced key.
    * Event shape: { id, title, description, color, start, end }
-   * Also exposes filtering selectors:
-   *  - selectFiltered({ query, colors, tags })
-   *  - selectUpcoming({ days = 7, limit = 10, ...filters })
+   * Also exposes filtering selectors compatible with a remote implementation.
    */
   const [events, setEvents] = useState([]);
 
@@ -107,5 +118,24 @@ export function useLocalEvents() {
       .slice(0, limit);
   };
 
-  return { events, getEvents, createEvent, updateEvent, deleteEvent, selectFiltered, selectUpcoming };
+  return {
+    events,
+    getEvents,
+    createEvent,
+    updateEvent,
+    deleteEvent,
+    selectFiltered,
+    selectUpcoming,
+  };
+}
+
+// PUBLIC_INTERFACE
+export function createEventsService(adapter = useLocalEvents) {
+  /**
+   * Factory that allows swapping the underlying events source.
+   * Example future usage:
+   *   const service = createEventsService(useApiEvents);
+   * For now, defaults to local storage implementation.
+   */
+  return adapter();
 }
