@@ -24,6 +24,7 @@ function App() {
    * - Month/Week/Day views rendering local events with simple overlap handling.
    * - EventModal for create/edit with validation.
    * - Hash-based routing syncing URL (#/view/YYYY-MM-DD) with calendar state.
+   * - Text search and color/tag filters with upcoming list in Sidebar.
    */
   const [theme, setTheme] = useState('light');
 
@@ -35,7 +36,28 @@ function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
 
-  const { events, createEvent, updateEvent, deleteEvent } = useLocalEvents();
+  // Search and filter state
+  const [query, setQuery] = useState('');
+  const [activeColors, setActiveColors] = useState([]); // array of hex strings
+  const [tags, setTags] = useState([]);
+
+  const {
+    events,
+    createEvent,
+    updateEvent,
+    deleteEvent,
+    selectFiltered,
+    selectUpcoming,
+  } = useLocalEvents();
+
+  // Filtered lists
+  const filteredEvents = useMemo(() => {
+    return selectFiltered({ query, colors: activeColors, tags });
+  }, [selectFiltered, query, activeColors, tags]);
+
+  const upcoming = useMemo(() => {
+    return selectUpcoming({ days: 7, limit: 10, query, colors: activeColors, tags });
+  }, [selectUpcoming, query, activeColors, tags]);
 
   // Keep state in sync with hash changes
   useEffect(() => {
@@ -124,25 +146,36 @@ function App() {
   );
 
   const filteredEventsForDate = useCallback(
-    (date) => events.filter((e) => isSameDay(new Date(e.start), date)),
-    [events]
+    (date) => filteredEvents.filter((e) => isSameDay(new Date(e.start), date)),
+    [filteredEvents]
   );
 
   const calendarView = useMemo(() => {
     const viewProps = {
       date: currentDate,
-      events,
+      events: filteredEvents,
       onEventClick: onEditEvent,
     };
     if (view === 'month') return <MonthView {...viewProps} />;
     if (view === 'week') return <WeekView {...viewProps} />;
     return <DayView {...viewProps} />;
-  }, [currentDate, events, onEditEvent, view]);
+  }, [currentDate, filteredEvents, onEditEvent, view]);
 
   return (
     <div className="app-root">
       <aside className="sidebar">
-        <Sidebar appName={APP_NAME} onCreateQuick={onCreateQuick} />
+        <Sidebar
+          appName={APP_NAME}
+          onCreateQuick={onCreateQuick}
+          filters={{
+            activeColors,
+            setActiveColors,
+            tags,
+            setTags,
+            upcoming,
+            onEventClick: onEditEvent,
+          }}
+        />
       </aside>
 
       <section className="main">
@@ -150,6 +183,8 @@ function App() {
           theme={theme}
           onToggleTheme={toggleTheme}
           onCreateQuick={onCreateQuick}
+          query={query}
+          onChangeQuery={setQuery}
         />
         <CalendarHeader
           date={currentDate}
