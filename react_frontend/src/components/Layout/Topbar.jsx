@@ -18,7 +18,7 @@ export function Topbar({ theme = 'light', onToggleTheme, onCreateQuick, query = 
           onChange={onInput}
         />
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button className="btn" onClick={onToggleTheme} aria-label="Toggle theme">
           {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
         </button>

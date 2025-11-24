@@ -122,7 +122,7 @@ export function Sidebar({ appName = 'Calendar', onCreateQuick, filters = {} }) {
                 #{t}{' '}
                 <button
                   className="btn"
-                  style={{ padding: '2px 6px', marginLeft: 6 }}
+                  style={{ padding: '2px 6px', marginLeft: 6, borderRadius: '6px' }}
                   onClick={() => removeTag(t)}
                   aria-label={`Remove tag ${t}`}
                 >
